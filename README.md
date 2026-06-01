@@ -1,4 +1,4 @@
-# MIAC_Basketball_Scheduling_Code
+# MIAC_Basketball_Project
 Code and documents for Alex McKeever's project working on creating MIAC Basketball schedules. Supported by Ryan Kershaw and Katie St. Clair.
 Contact: alexmckeever25@gmail.com
 
