@@ -1,0 +1,432 @@
+---
+title: "Visualization"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+Calculate metrics as normal in Filter.Rmd and Metrics.Rmd
+
+```{r}
+# Load data
+full_data <- read.csv("CSVNAME")
+```
+
+```{r}
+full_data <- full_data %>%
+  mutate(across(everything(), as.numeric))
+
+full_data <- cbind(index =(seq_len(nrow(full_data))-1) %% 11, full_data)
+```
+
+```{r}
+Sched_Track <- full_data %>%
+  select(c(Schedule, index, N1_Opp, C1_Opp, N2_Opp, C2_Opp, N3_Opp, C3_Opp, N4_Opp, C4_Opp, C5_Opp, C6_Opp, N5_Opp, C7_Opp, N6_Opp, C8_Opp, C9_Opp, C10_Opp, N7_Opp, C11_Opp))
+  
+Home_Track <- full_data %>%
+  select(c(Schedule, index, N1_Home, C1_Home, N2_Home, C2_Home, N3_Home, C3_Home, N4_Home, C4_Home, C5_Home, C6_Home, N5_Home, C7_Home, N6_Home, C8_Home, C9_Home, C10_Home, N7_Home, C11_Home))
+
+Home_Track_Con <- full_data %>%
+  select(c(Schedule, index, C1_Home, C2_Home, C3_Home, C4_Home, C5_Home, C6_Home, C7_Home, C8_Home, C9_Home, C10_Home, C11_Home))
+
+Home_Track_Non <- full_data %>%
+  select(c(Schedule, index , N1_Home, N2_Home, N3_Home,N4_Home,N5_Home,N6_Home, N7_Home))
+```
+
+```{r}
+bye_gap <- function(row, value) {
+  
+  indices <- which(trimws(row) == value)
+  
+  if (length(indices) < 2) {
+    return(NA) 
+  }
+  
+  gaps <- diff(indices) - 1
+  
+  return(paste(gaps, collapse = ", "))
+}
+
+Sched_Track$Games_Between_Bye <- as.numeric(apply(Sched_Track[, c(3:20)], 1, bye_gap, value = -1))
+```
+
+```{r}
+consec_games <- function(x, value) {
+  
+  r <- rle(x)
+  
+  lengths <- r$lengths[r$values == value]
+
+  if (length(lengths) > 0) {
+    
+    return(max(lengths))
+    
+  } else {
+    return(0)
+  }
+}
+
+Home_Track$Max_Away_Streak_Total <- apply(Home_Track[, c(3:20)], 1,  
+                                          consec_games, value = 0)
+
+Home_Track$Max_Home_Streak_Total <- apply(Home_Track[, c(3:20)], 1, 
+                                          consec_games, value = 1)
+```
+
+```{r}
+full_data <- full_data %>%
+group_by(Schedule, index) %>%
+  mutate(NonCon_Dist = sum(N1_Dist * (N1_Home == 0)   + 
+                            N2_Dist * (N2_Home == 0)  + 
+                            N3_Dist * (N3_Home == 0)  + 
+                            N4_Dist * (N4_Home == 0)  + 
+                            N5_Dist * (N5_Home == 0)  + 
+                            N6_Dist * (N6_Home == 0)  + 
+                            N7_Dist * (N7_Home == 0) 
+                            , na.rm = TRUE) ,
+         Con_Dist = sum(C1_Dist * (C1_Home == 0)   + 
+                           C2_Dist * (C2_Home == 0)+ 
+                           C3_Dist * (C3_Home == 0)+ 
+                           C4_Dist * (C4_Home == 0)+ 
+                           C5_Dist * (C5_Home == 0)+ 
+                           C6_Dist * (C6_Home == 0)+ 
+                           C7_Dist * (C7_Home == 0)+ 
+                           C8_Dist * (C8_Home == 0)+ 
+                           C9_Dist * (C9_Home == 0)+ 
+                           C10_Dist * (C10_Home == 0)+ 
+                           C11_Dist * (C11_Home == 0)
+                           , na.rm = TRUE),
+         Total_Dist = NonCon_Dist + Con_Dist)
+```
+
+```{r}
+full_data_complete <- full_data %>%
+  left_join(Sched_Track) %>%
+  left_join(Home_Track) %>%
+  left_join(Home_Track_Con) %>%
+  left_join(Home_Track_Non)
+```
+
+```{r}
+full_data_complete <- full_data_complete %>%
+  mutate(TeamPain = (abs(Games_Between_Bye - 8) * 100 +  Con_Dist*1.2 +  NonCon_Dist + Max_Away_Streak_Total * 100)/100)
+```
+
+```{r}
+full_data_complete <- full_data_complete %>%
+  mutate(TeamPain_FromMean = case_when(
+    index == 0 ~ TeamPain - 14.67482,
+    index == 1 ~ TeamPain - 14.89973,
+    index == 2 ~ TeamPain - 15.95973,
+    index == 3 ~ TeamPain - 27.96366,
+    index == 4 ~ TeamPain - 17.64038,
+    index == 5 ~ TeamPain - 14.78092,
+    index == 6 ~ TeamPain - 14.84008,
+    index == 7 ~ TeamPain - 17.92112,
+    index == 8 ~ TeamPain - 20.72097,
+    index == 9 ~ TeamPain - 15.82261,
+    index == 10 ~ TeamPain - 22.64937
+  ),
+  ConDist_FromMean = case_when(
+    index == 0 ~ Con_Dist - 384.7642,
+    index == 1 ~ Con_Dist - 399.4845,
+    index == 2 ~ Con_Dist - 464.4267,
+    index == 3 ~ Con_Dist - 1169.553,
+    index == 4 ~ Con_Dist - 577.1146,
+    index == 5 ~ Con_Dist - 391.9879,
+    index == 6 ~ Con_Dist - 393.9145,
+    index == 7 ~ Con_Dist - 586.4129,
+    index == 8 ~ Con_Dist - 802.5734,
+    index == 9 ~ Con_Dist - 453.4441,
+    index == 10 ~ Con_Dist - 886.3242
+  ),
+  NonConDist_FromMean = case_when(
+    index == 0 ~ NonCon_Dist - 259.1872,
+    index == 1 ~ NonCon_Dist - 262.9351,
+    index == 2 ~ NonCon_Dist - 292.3527,
+    index == 3 ~ NonCon_Dist - 644.6373,
+    index == 4 ~ NonCon_Dist - 326.4413,
+    index == 5 ~ NonCon_Dist - 260.4269,
+    index == 6 ~ NonCon_Dist - 263.9249,
+    index == 7 ~ NonCon_Dist - 340.4638,
+    index == 8 ~ NonCon_Dist - 361.728,
+    index == 9 ~ NonCon_Dist - 289.6255,
+    index == 10 ~ NonCon_Dist - 454.4512
+  )
+  )
+
+full_data_complete <- full_data_complete %>%
+  group_by(Schedule) %>%
+  mutate(AveragePain = mean(TeamPain),
+         AvgPainFromMean = mean(TeamPain_FromMean),
+         AvgConDistFromMean = mean(ConDist_FromMean),
+         AvgNonConDistFromMean = mean(NonConDist_FromMean)) %>%
+  ungroup() %>%  
+  group_by(Schedule, index) %>%
+  mutate(
+         Sq_Dist_Total_From_TeamPain = (AveragePain - TeamPain)^2) %>%
+  ungroup() %>%
+  group_by(Schedule) %>%
+  mutate(
+    RMSE_TeamPain = sqrt(mean(Sq_Dist_Total_From_TeamPain)))
+```
+
+```{r}
+summary_full <- full_data_complete %>%
+  group_by(Schedule) %>%
+  mutate(Average_Dist_Total = mean(Total_Dist),
+         Average_Dist_NonCon = mean(NonCon_Dist),
+         Average_Dist_Con = mean(Con_Dist)) %>%
+  ungroup() %>%  
+  group_by(Schedule, index) %>%
+  mutate(
+         Sq_Dist_Total_From_Mean = (Average_Dist_Total - Total_Dist)^2,
+         Sq_Dist_NonCon_From_Mean = (Average_Dist_NonCon - NonCon_Dist)^2,
+         Sq_Dist_Con_From_Mean = (Average_Dist_Con - Con_Dist)^2) %>%
+  ungroup() %>%
+  group_by(Schedule) %>%
+  summarise(
+    # We want these to be low
+    RMSE_Total_Dist = sqrt(mean(Sq_Dist_Total_From_Mean)),
+            RMSE_NonCon_Dist =  sqrt(mean(Sq_Dist_NonCon_From_Mean)),
+            RMSE_Con_Dist = sqrt(mean(Sq_Dist_Con_From_Mean))) %>% ungroup()
+
+```
+
+Histograms of our metrics with the lines coming from the values calculated in Selection.Rmd. Further left is better!
+
+```{r}
+# Schedule 492239
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Total_Dist)) +
+   geom_vline(xintercept = 358.2620, color = "red", linewidth = 1) + 
+  theme_bw() +
+  labs(title = "RMSE_Total_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_NonCon_Dist)) +
+   geom_vline(xintercept = 108.3986, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_NonCon_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Con_Dist)) +
+   geom_vline(xintercept = 271.4225, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_Con_Dist")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = RMSE_TeamPain)) +
+   geom_vline(xintercept = 3.770285, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_TeamPain")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgPainFromMean)) +
+   geom_vline(xintercept = -1.7039445, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgPainFromMean")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgNonConDistFromMean)) +
+   geom_vline(xintercept = 4.0751000, color = "red", linewidth = 1) + 
+  theme_bw() +
+  labs(title = "AvgNonConDistFromMean")
+```
+
+```{r}
+# Schedule 746595
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Total_Dist)) +
+   geom_vline(xintercept = 348.9748, color = "red", linewidth = 1) + 
+  theme_bw()  +
+  labs(title = "RMSE_Total_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_NonCon_Dist)) +
+   geom_vline(xintercept = 145.3168, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_NonCon_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Con_Dist)) +
+   geom_vline(xintercept = 226.8848, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_Con_Dist")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = RMSE_TeamPain)) +
+   geom_vline(xintercept = 4.676006, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_TeamPain")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgPainFromMean)) +
+   geom_vline(xintercept = -1.2003082, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgPainFromMean")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgNonConDistFromMean)) +
+   geom_vline(xintercept = -0.1067182, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgNonConDistFromMean")
+```
+
+```{r}
+# Schedule 25735
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Total_Dist)) +
+   geom_vline(xintercept = 346.7681, color = "red", linewidth = 1) + 
+  theme_bw() +
+  labs(title = "RMSE_Total_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_NonCon_Dist)) +
+   geom_vline(xintercept = 134.2881, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_NonCon_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Con_Dist)) +
+   geom_vline(xintercept = 247.1841, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_Con_Dist")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = RMSE_TeamPain)) +
+   geom_vline(xintercept = 4.604094, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_TeamPain")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgPainFromMean)) +
+   geom_vline(xintercept = -1.4339445, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgPainFromMean")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgNonConDistFromMean)) +
+   geom_vline(xintercept = 3.8023727, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgNonConDistFromMean")
+```
+
+```{r}
+# Schedule 364229
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Total_Dist)) +
+   geom_vline(xintercept = 351.7615, color = "red", linewidth = 1) + 
+  theme_bw() +
+  labs(title = "RMSE_Total_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_NonCon_Dist)) +
+   geom_vline(xintercept = 133.5156, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_NonCon_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Con_Dist)) +
+   geom_vline(xintercept = 257.9347, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_Con_Dist")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = RMSE_TeamPain)) +
+   geom_vline(xintercept = 2.978891, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_TeamPain")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgPainFromMean)) +
+   geom_vline(xintercept = -0.1393991, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgPainFromMean")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgNonConDistFromMean)) +
+   geom_vline(xintercept = -3.1067182, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgNonConDistFromMean")
+```
+
+```{r}
+# Schedule 17720
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Total_Dist)) +
+   geom_vline(xintercept = 368.8853, color = "red", linewidth = 1) + 
+  theme_bw() +
+  labs(title = "RMSE_Total_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_NonCon_Dist)) +
+   geom_vline(xintercept = 113.9608, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_NonCon_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Con_Dist)) +
+   geom_vline(xintercept = 271.4600, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_Con_Dist")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = RMSE_TeamPain)) +
+   geom_vline(xintercept = 4.319172, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_TeamPain")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgPainFromMean)) +
+   geom_vline(xintercept = -1.4139445, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgPainFromMean")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgNonConDistFromMean)) +
+   geom_vline(xintercept = -3.2885364, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgNonConDistFromMean")
+```
+
+```{r}
+# Schedule 109201
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Total_Dist)) +
+   geom_vline(xintercept = 354.4114, color = "red", linewidth = 1) + 
+  theme_bw() +
+  labs(title = "RMSE_Total_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_NonCon_Dist)) +
+   geom_vline(xintercept = 142.5245, color = "red", linewidth = 1) + 
+  theme_bw() +
+  labs(title = "RMSE_NonCon_Dist")
+
+ggplot(summary_full) +
+  geom_density(aes(x = RMSE_Con_Dist)) +
+   geom_vline(xintercept = 236.0974, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_Con_Dist")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = RMSE_TeamPain)) +
+   geom_vline(xintercept = 3.192554, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "RMSE_TeamPain")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgPainFromMean)) +
+   geom_vline(xintercept = -2.9493991, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgPainFromMean")
+
+ggplot(full_data_complete) +
+  geom_density(aes(x = AvgNonConDistFromMean)) +
+   geom_vline(xintercept = -2.2885364, color = "red", linewidth = 1) + 
+  theme_bw()+
+  labs(title = "AvgNonConDistFromMean")
+```

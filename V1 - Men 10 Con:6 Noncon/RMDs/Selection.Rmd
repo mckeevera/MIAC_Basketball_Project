@@ -1,0 +1,459 @@
+---
+title: "Selection"
+output: html_document
+---
+
+Load in data
+
+```{r}
+# Load tidyverse and the filtered "good" schedules
+library(tidyverse)
+data1 <- read.csv("FilteredSet1.csv") %>%
+  # Set is the version of ScheduleSet the FilteredSet comes from
+  mutate(set = 1)
+data2 <- read.csv("FilteredSet2.csv") %>%
+  mutate(set = 2)
+data3 <- read.csv("FilteredSet3.csv") %>%
+  mutate(set = 3)
+data4 <- read.csv("FilteredSet4.csv") %>%
+  mutate(set = 4)
+data5 <- read.csv("FilteredSet5.csv") %>%
+  mutate(set = 5)
+data6 <- read.csv("FilteredSet6.csv") %>%
+  mutate(set = 5)
+data7 <- read.csv("FilteredSet7.csv") %>%
+  mutate(set = 5)
+data8 <- read.csv("FilteredSet8.csv") %>%
+  mutate(set = 5)
+data9 <- read.csv("FilteredSet9.csv") %>%
+  mutate(set = 5)
+data10 <- read.csv("FilteredSet10.csv") %>%
+  mutate(set = 5)
+data11 <- read.csv("FilteredSet11.csv") %>%
+  mutate(set = 5)
+data12 <- read.csv("FilteredSet12.csv") %>%
+  mutate(set = 5)
+data13 <- read.csv("FilteredSet13.csv") %>%
+  mutate(set = 5)
+data14 <- read.csv("FilteredSet14.csv") %>%
+  mutate(set = 5)
+data15 <- read.csv("FilteredSet15.csv") %>%
+  mutate(set = 6)
+data16 <- read.csv("FilteredSet16.csv") %>%
+  mutate(set = 6)
+data17 <- read.csv("FilteredSet17.csv") %>%
+  mutate(set = 6)
+```
+
+```{r}
+# Combine data frames into one large one
+data <- data1 %>%
+  rbind(data2) %>%
+  rbind(data3)%>%
+  rbind(data4)%>%
+  rbind(data5)%>%
+  rbind(data6)%>%
+  rbind(data7)%>%
+  rbind(data8)%>%
+  rbind(data9)%>%
+  rbind(data10)%>%
+  rbind(data11)%>%
+  rbind(data12)%>%
+  rbind(data13)%>%
+  rbind(data14)%>%
+  rbind(data15)%>%
+  rbind(data16)%>%
+  rbind(data17)
+```
+
+Filter to better schedules based on home and away streaks (repeat opponents in back to back weeks is filtered out in Filter.Rmd)
+
+```{r}
+data <- data %>%
+  filter(max_home_streak < 5,
+         max_away_streak < 5,
+         max_home_streak_c < 5,
+         max_away_streak_c < 5,
+         min_bye_dist > 1)
+```
+
+```{r}
+# Grab the specific schedules that remain
+Sched1 <- read.csv("ScheduleSet1.csv", skip = 17720*11-11, nrows = 11, header = TRUE)
+Sched2 <- read.csv("ScheduleSet1.csv", skip = 18848*11-11, nrows = 11, header = TRUE)
+Sched3 <- read.csv("ScheduleSet1.csv", skip = 92429*11-23, nrows = 11, header = TRUE)
+Sched4 <- read.csv("ScheduleSet2.csv", skip = 44191*11-11, nrows = 11, header = TRUE)
+Sched5 <- read.csv("ScheduleSet2.csv", skip = 52261*11-11, nrows = 11, header = TRUE)
+Sched6 <- read.csv("ScheduleSet3.csv", skip = 22574*11-11, nrows = 11, header = TRUE)
+Sched7 <- read.csv("ScheduleSet4.csv", skip = 25735*11-11, nrows = 11, header = TRUE)
+Sched8 <- read.csv("ScheduleSet4.csv", skip = 38218*11-11, nrows = 11, header = TRUE)
+Sched9 <- read.csv("ScheduleSet4.csv", skip = 91648*11-11, nrows = 11, header = TRUE)
+Sched10 <- read.csv("ScheduleSet5.csv", skip = 7803*11-11, nrows = 11, header = TRUE)
+Sched11 <- read.csv("ScheduleSet5.csv", skip = 42455*11-11, nrows = 11, header = TRUE)
+Sched12 <- read.csv("ScheduleSet5.csv", skip = 101170*11-11, nrows = 11, header = TRUE)
+Sched13 <- read.csv("ScheduleSet5.csv", skip = 106172*11-11, nrows = 11, header = TRUE)
+Sched14 <- read.csv("ScheduleSet5.csv", skip = 109524*11-11, nrows = 11, header = TRUE)
+Sched15 <- read.csv("ScheduleSet5.csv", skip = 140826*11-11, nrows = 11, header = TRUE)
+Sched16 <- read.csv("ScheduleSet5.csv", skip = 145951*11-11, nrows = 11, header = TRUE)
+Sched17 <- read.csv("ScheduleSet5.csv", skip = 163138*11-11, nrows = 11, header = TRUE)
+Sched18 <- read.csv("ScheduleSet5.csv", skip = 222097*11-11, nrows = 11, header = TRUE)
+Sched19 <- read.csv("ScheduleSet5.csv", skip = 239266*11-11, nrows = 11, header = TRUE)
+Sched20 <- read.csv("ScheduleSet5.csv", skip = 242879*11-11, nrows = 11, header = TRUE)
+Sched21 <- read.csv("ScheduleSet5.csv", skip = 254054*11-11, nrows = 11, header = TRUE)
+Sched22 <- read.csv("ScheduleSet5.csv", skip = 277295*11-11, nrows = 11, header = TRUE)
+Sched23 <- read.csv("ScheduleSet5.csv", skip = 358200*11-11, nrows = 11, header = TRUE)
+Sched24 <- read.csv("ScheduleSet5.csv", skip = 364229*11-11, nrows = 11, header = TRUE)
+Sched25 <- read.csv("ScheduleSet5.csv", skip = 384511*11-11, nrows = 11, header = TRUE)
+Sched26 <- read.csv("ScheduleSet5.csv", skip = 410891*11-11, nrows = 11, header = TRUE)
+Sched27 <- read.csv("ScheduleSet5.csv", skip = 492239*11-11, nrows = 11, header = TRUE)
+Sched28 <- read.csv("ScheduleSet5.csv", skip = 512940*11-11, nrows = 11, header = TRUE)
+Sched29 <- read.csv("ScheduleSet5.csv", skip = 553032*11-11, nrows = 11, header = TRUE)
+Sched30 <- read.csv("ScheduleSet5.csv", skip = 574670*11-11, nrows = 11, header = TRUE)
+Sched31 <- read.csv("ScheduleSet5.csv", skip = 623952*11-11, nrows = 11, header = TRUE)
+Sched32 <- read.csv("ScheduleSet5.csv", skip = 644212*11-11, nrows = 11, header = TRUE)
+Sched33 <- read.csv("ScheduleSet5.csv", skip = 690730*11-11, nrows = 11, header = TRUE)
+Sched34 <- read.csv("ScheduleSet5.csv", skip = 693965*11-11, nrows = 11, header = TRUE)
+Sched35 <- read.csv("ScheduleSet5.csv", skip = 716571*11-11, nrows = 11, header = TRUE)
+Sched36 <- read.csv("ScheduleSet5.csv", skip = 739729*11-11, nrows = 11, header = TRUE)
+Sched37 <- read.csv("ScheduleSet5.csv", skip = 746595*11-11, nrows = 11, header = TRUE)
+Sched38 <- read.csv("ScheduleSet5.csv", skip = 826395*11-11, nrows = 11, header = TRUE)
+Sched39 <- read.csv("ScheduleSet5.csv", skip = 892218*11-11, nrows = 11, header = TRUE)
+Sched40 <- read.csv("ScheduleSet5.csv", skip = 905864*11-11, nrows = 11, header = TRUE)
+Sched41 <- read.csv("ScheduleSet5.csv", skip = 925096*11-11, nrows = 11, header = TRUE)
+Sched42 <- read.csv("ScheduleSet5.csv", skip = 953938*11-11, nrows = 11, header = TRUE)
+Sched43 <- read.csv("ScheduleSet5.csv", skip = 976602*11-11, nrows = 11, header = TRUE)
+Sched44 <- read.csv("ScheduleSet5.csv", skip = 983649*11-11, nrows = 11, header = TRUE)
+Sched45 <- read.csv("ScheduleSet6.csv", skip = 3794*11-11, nrows = 11, header = TRUE)
+Sched46 <- read.csv("ScheduleSet6.csv", skip = 32769*11-11, nrows = 11, header = TRUE)
+Sched47 <- read.csv("ScheduleSet6.csv", skip = 109201*11-11, nrows = 11, header = TRUE)
+Sched48 <- read.csv("ScheduleSet6.csv", skip = 157290*11-11, nrows = 11, header = TRUE)
+Sched49 <- read.csv("ScheduleSet6.csv", skip = 177647*11-11, nrows = 11, header = TRUE)
+```
+
+```{r}
+# Append correct column names
+names <- read.csv("mass.csv", nrows = 1, header = TRUE)
+colnames(Sched1) <- colnames(names)
+colnames(Sched2) <- colnames(names)
+colnames(Sched3) <- colnames(names)
+colnames(Sched4) <- colnames(names)
+colnames(Sched5) <- colnames(names)
+colnames(Sched6) <- colnames(names)
+colnames(Sched7) <- colnames(names)
+colnames(Sched8) <- colnames(names)
+colnames(Sched9) <- colnames(names)
+colnames(Sched10) <- colnames(names)
+colnames(Sched11) <- colnames(names)
+colnames(Sched12) <- colnames(names)
+colnames(Sched13) <- colnames(names)
+colnames(Sched14) <- colnames(names)
+colnames(Sched15) <- colnames(names)
+colnames(Sched16) <- colnames(names)
+colnames(Sched17) <- colnames(names)
+colnames(Sched18) <- colnames(names)
+colnames(Sched19) <- colnames(names)
+colnames(Sched20) <- colnames(names)
+colnames(Sched21) <- colnames(names)
+colnames(Sched22) <- colnames(names)
+colnames(Sched23) <- colnames(names)
+colnames(Sched24) <- colnames(names)
+colnames(Sched25) <- colnames(names)
+colnames(Sched26) <- colnames(names)
+colnames(Sched27) <- colnames(names)
+colnames(Sched28) <- colnames(names)
+colnames(Sched29) <- colnames(names)
+colnames(Sched30) <- colnames(names)
+colnames(Sched31) <- colnames(names)
+colnames(Sched32) <- colnames(names)
+colnames(Sched33) <- colnames(names)
+colnames(Sched34) <- colnames(names)
+colnames(Sched35) <- colnames(names)
+colnames(Sched36) <- colnames(names)
+colnames(Sched37) <- colnames(names)
+colnames(Sched38) <- colnames(names)
+colnames(Sched39) <- colnames(names)
+colnames(Sched40) <- colnames(names)
+colnames(Sched41) <- colnames(names)
+colnames(Sched42) <- colnames(names)
+colnames(Sched43) <- colnames(names)
+colnames(Sched44) <- colnames(names)
+colnames(Sched45) <- colnames(names)
+colnames(Sched46) <- colnames(names)
+colnames(Sched47) <- colnames(names)
+colnames(Sched48) <- colnames(names)
+colnames(Sched49) <- colnames(names)
+
+# Combine them and make everything numeric
+Schedules <- rbind(Sched1, Sched2, Sched3, Sched4, Sched5 ,Sched6 ,Sched7 ,Sched8 ,Sched9 ,Sched10,  Sched11, Sched12, Sched13, Sched14, Sched15 ,Sched16 ,Sched17 ,Sched18 ,Sched19 ,Sched20, Sched21, Sched22, Sched23, Sched24, Sched25 ,Sched26 ,Sched27 ,Sched28 ,Sched29 ,Sched30, Sched31, Sched32, Sched33, Sched34, Sched35 ,Sched36 ,Sched37 ,Sched38 ,Sched39 ,Sched40, Sched41, Sched42, Sched43, Sched44, Sched45 ,Sched46 ,Sched47 ,Sched48 ,Sched49)
+  
+Schedules <- Schedules %>%
+  mutate(across(everything(), as.numeric))
+
+# Add team index
+Schedules <- cbind(index =(seq_len(nrow(Schedules))-1) %% 11, Schedules)
+```
+
+Split our data and calculate our metrics as in Filter.Rmd and Metrics.Rmd
+
+```{r}
+Sched_Track <- Schedules %>%
+  select(c(Schedule, index, N1_Opp, C1_Opp, N2_Opp, C2_Opp, N3_Opp, C3_Opp, N4_Opp, C4_Opp, C5_Opp, C6_Opp, N5_Opp, C7_Opp, N6_Opp, C8_Opp, C9_Opp, C10_Opp, N7_Opp, C11_Opp))
+  
+
+Home_Track <- Schedules %>%
+  select(c(Schedule, index, N1_Home, C1_Home, N2_Home, C2_Home, N3_Home, C3_Home, N4_Home, C4_Home, C5_Home, C6_Home, N5_Home, C7_Home, N6_Home, C8_Home, C9_Home, C10_Home, N7_Home, C11_Home))
+
+Home_Track_Con <- Schedules %>%
+  select(c(Schedule, index, C1_Home, C2_Home, C3_Home, C4_Home, C5_Home, C6_Home, C7_Home, C8_Home, C9_Home, C10_Home, C11_Home))
+
+Home_Track_Non <- Schedules %>%
+  select(c(Schedule, index , N1_Home, N2_Home, N3_Home,N4_Home,N5_Home,N6_Home, N7_Home))
+```
+
+```{r}
+Schedules <- Schedules %>%
+group_by(Schedule, index) %>%
+  mutate(NonCon_Dist = sum(N1_Dist * (N1_Home == 0)   + 
+                            N2_Dist * (N2_Home == 0)  + 
+                            N3_Dist * (N3_Home == 0)  + 
+                            N4_Dist * (N4_Home == 0)  + 
+                            N5_Dist * (N5_Home == 0)  + 
+                            N6_Dist * (N6_Home == 0)  + 
+                            N7_Dist * (N7_Home == 0) 
+                            , na.rm = TRUE) ,
+         Con_Dist = sum(C1_Dist * (C1_Home == 0)   + 
+                           C2_Dist * (C2_Home == 0)+ 
+                           C3_Dist * (C3_Home == 0)+ 
+                           C4_Dist * (C4_Home == 0)+ 
+                           C5_Dist * (C5_Home == 0)+ 
+                           C6_Dist * (C6_Home == 0)+ 
+                           C7_Dist * (C7_Home == 0)+ 
+                           C8_Dist * (C8_Home == 0)+ 
+                           C9_Dist * (C9_Home == 0)+ 
+                           C10_Dist * (C10_Home == 0)+ 
+                           C11_Dist * (C11_Home == 0)
+                           , na.rm = TRUE),
+         Total_Dist = NonCon_Dist + Con_Dist)
+```
+
+```{r}
+bye_gap <- function(row, value) {
+  
+  indices <- which(trimws(row) == value)
+  
+  if (length(indices) < 2) {
+    return(NA) 
+  }
+  
+  gaps <- diff(indices) - 1
+  
+  return(paste(gaps, collapse = ", "))
+}
+
+Sched_Track$Games_Between_Bye <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = -1)
+Sched_Track$Games_Between_0 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 0)
+Sched_Track$Games_Between_1 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 1)
+Sched_Track$Games_Between_2 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 2)
+Sched_Track$Games_Between_3 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 3)
+Sched_Track$Games_Between_4 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 4)
+Sched_Track$Games_Between_5 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 5)
+Sched_Track$Games_Between_6 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 6)
+Sched_Track$Games_Between_7 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 7)
+Sched_Track$Games_Between_8 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 8)
+Sched_Track$Games_Between_9 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 9)
+Sched_Track$Games_Between_10 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 10)
+```
+
+```{r}
+consec_games <- function(x, value) {
+  
+  r <- rle(x)
+  
+  lengths <- r$lengths[r$values == value]
+
+  if (length(lengths) > 0) {
+    
+    return(max(lengths))
+    
+  } else {
+    return(0)
+  }
+}
+
+Home_Track$Max_Away_Streak_Total <- apply(Home_Track[, c(3:20)], 1,  
+                                          consec_games, value = 0)
+
+Home_Track$Max_Home_Streak_Total <- apply(Home_Track[, c(3:20)], 1, 
+                                          consec_games, value = 1)
+
+Home_Track_Con$Max_Away_Streak_Con <- apply(Home_Track_Con[, c(3:13)], 1, 
+                                          consec_games, value = 0)
+
+Home_Track_Con$Max_Home_Streak_Con <- apply(Home_Track_Con[, c(3:13)], 1, 
+                                          consec_games, value = 1)
+
+Home_Track_Non$Max_Away_Streak_Non <- apply(Home_Track_Non[, c(3:9)], 1, 
+                                          consec_games, value = 0)
+
+Home_Track_Non$Max_Home_Streak_Non <- apply(Home_Track_Non[, c(3:9)], 1, 
+                                          consec_games, value = 1)
+```
+
+```{r}
+Schedules_Complete <- Schedules %>%
+  left_join(Sched_Track) %>%
+  left_join(Home_Track) %>%
+  left_join(Home_Track_Con) %>%
+  left_join(Home_Track_Non)
+
+
+Schedules_Complete$Games_Between_Bye <- as.numeric(Schedules_Complete$Games_Between_Bye)
+Schedules_Complete$Games_Between_0 <- as.numeric(Schedules_Complete$Games_Between_0)
+Schedules_Complete$Games_Between_1 <- as.numeric(Schedules_Complete$Games_Between_1)
+Schedules_Complete$Games_Between_2 <- as.numeric(Schedules_Complete$Games_Between_2)
+Schedules_Complete$Games_Between_3 <- as.numeric(Schedules_Complete$Games_Between_3)
+Schedules_Complete$Games_Between_4 <- as.numeric(Schedules_Complete$Games_Between_4)
+Schedules_Complete$Games_Between_5 <- as.numeric(Schedules_Complete$Games_Between_5)
+Schedules_Complete$Games_Between_6 <- as.numeric(Schedules_Complete$Games_Between_6)
+Schedules_Complete$Games_Between_7 <- as.numeric(Schedules_Complete$Games_Between_7)
+Schedules_Complete$Games_Between_8 <- as.numeric(Schedules_Complete$Games_Between_8)
+Schedules_Complete$Games_Between_9 <- as.numeric(Schedules_Complete$Games_Between_9)
+Schedules_Complete$Games_Between_10 <- as.numeric(Schedules_Complete$Games_Between_10)
+Schedules_Complete$Max_Away_Streak_Con <- as.numeric(Schedules_Complete$Max_Away_Streak_Con)
+Schedules_Complete$Max_Home_Streak_Con <- as.numeric(Schedules_Complete$Max_Home_Streak_Con)
+Schedules_Complete$Max_Away_Streak_Non <- as.numeric(Schedules_Complete$Max_Away_Streak_Non)
+Schedules_Complete$Max_Home_Streak_Non <- as.numeric(Schedules_Complete$Max_Home_Streak_Non)
+Schedules_Complete$Max_Away_Streak_Total <- as.numeric(Schedules_Complete$Max_Away_Streak_Total)
+Schedules_Complete$Max_Home_Streak_Total <- as.numeric(Schedules_Complete$Max_Home_Streak_Total)
+```
+
+Add Team Pain metric
+
+```{r}
+Schedules_Complete <- Schedules_Complete %>%
+  mutate(TeamPain = (abs(Games_Between_Bye - 8) * 100 +  Con_Dist*1.2 +  NonCon_Dist + Max_Away_Streak_Total * 100)/100)
+```
+
+Get distance and pain from means (based on Metrics.Rmd)
+
+```{r}
+Schedules_Complete <- Schedules_Complete %>%
+  mutate(TeamPain_FromMean = case_when(
+    index == 0 ~ TeamPain - 14.67482,
+    index == 1 ~ TeamPain - 14.89973,
+    index == 2 ~ TeamPain - 15.95973,
+    index == 3 ~ TeamPain - 27.96366,
+    index == 4 ~ TeamPain - 17.64038,
+    index == 5 ~ TeamPain - 14.78092,
+    index == 6 ~ TeamPain - 14.84008,
+    index == 7 ~ TeamPain - 17.92112,
+    index == 8 ~ TeamPain - 20.72097,
+    index == 9 ~ TeamPain - 15.82261,
+    index == 10 ~ TeamPain - 22.64937
+  ),
+  ConDist_FromMean = case_when(
+    index == 0 ~ Con_Dist - 384.7642,
+    index == 1 ~ Con_Dist - 399.4845,
+    index == 2 ~ Con_Dist - 464.4267,
+    index == 3 ~ Con_Dist - 1169.553,
+    index == 4 ~ Con_Dist - 577.1146,
+    index == 5 ~ Con_Dist - 391.9879,
+    index == 6 ~ Con_Dist - 393.9145,
+    index == 7 ~ Con_Dist - 586.4129,
+    index == 8 ~ Con_Dist - 802.5734,
+    index == 9 ~ Con_Dist - 453.4441,
+    index == 10 ~ Con_Dist - 886.3242
+  ),
+  NonConDist_FromMean = case_when(
+    index == 0 ~ NonCon_Dist - 259.1872,
+    index == 1 ~ NonCon_Dist - 262.9351,
+    index == 2 ~ NonCon_Dist - 292.3527,
+    index == 3 ~ NonCon_Dist - 644.6373,
+    index == 4 ~ NonCon_Dist - 326.4413,
+    index == 5 ~ NonCon_Dist - 260.4269,
+    index == 6 ~ NonCon_Dist - 263.9249,
+    index == 7 ~ NonCon_Dist - 340.4638,
+    index == 8 ~ NonCon_Dist - 361.728,
+    index == 9 ~ NonCon_Dist - 289.6255,
+    index == 10 ~ NonCon_Dist - 454.4512
+  )
+  )
+```
+
+```{r}
+Analysis <- Schedules_Complete %>%
+  select(c(72:81), index, Schedule)
+```
+
+Filter to better schedules
+
+```{r}
+# Remove schedules that have very high team pain or team pain from mean values
+SubAnalysis <- Analysis %>%
+  group_by(Schedule) %>%
+  mutate(maxy = max(TeamPain_FromMean),
+         maxx = max(TeamPain)) %>%
+  filter(maxy < 3,
+         maxx < 28) %>%
+  ungroup()
+```
+
+```{r}
+# Filter the team level data as well
+SubData <- data %>%
+  filter(Schedule %in% unique(SubAnalysis$Schedule))
+```
+
+Extract schedules
+
+```{r}
+# Calculate metrics as in Filter.Rmd
+SubAnalysis <- SubAnalysis %>%
+  group_by(Schedule) %>%
+  mutate(AveragePain = mean(TeamPain),
+         AvgPainFromMean = mean(TeamPain_FromMean),
+         AvgConDistFromMean = mean(ConDist_FromMean),
+         AvgNonConDistFromMean = mean(NonConDist_FromMean)) %>%
+  ungroup() %>%  
+  group_by(Schedule, index) %>%
+  mutate(
+         Sq_Dist_Total_From_TeamPain = (AveragePain - TeamPain)^2) %>%
+  ungroup() %>%
+  group_by(Schedule) %>%
+  mutate(
+    RMSE_TeamPain = sqrt(mean(Sq_Dist_Total_From_TeamPain)))
+```
+
+```{r}
+# Filter to the 6 'best' schedules 
+FinalSubAnalysis <- SubAnalysis %>%
+  select(Schedule, RMSE_TeamPain, AvgPainFromMean, AvgNonConDistFromMean) %>%
+  filter(Schedule %in% c(492239, 746595, 25735, 364229, 17720, 109201))
+
+FinalSubData <- SubData %>%
+  select(Schedule, RMSE_Total_Dist, RMSE_NonCon_Dist, RMSE_Con_Dist) %>%
+  filter(Schedule %in% c(492239, 746595, 25735, 364229, 17720, 109201)) 
+
+FinalSubAnalysis <- unique(FinalSubAnalysis)
+FinalSubData <- unique(FinalSubData)
+  
+```
+
+```{r}
+# The four proposed schedules are
+#Sched37 
+#Sched24
+#Sched1
+#Sched47
+```
+
+```{r}
+# View these Schedules via filtering
+view(Sched37 %>%
+  select(c(Schedule, N1_Opp, C1_Opp, N2_Opp, C2_Opp, N3_Opp, C3_Opp, N4_Opp, C4_Opp, C5_Opp, C6_Opp, N5_Opp, C7_Opp, N6_Opp, C8_Opp, C9_Opp, C10_Opp, N7_Opp, C11_Opp)))
+```
+
+```{r}
+view(Sched37 %>%
+  select(c(Schedule, N1_Home, C1_Home, N2_Home, C2_Home, N3_Home, C3_Home, N4_Home, C4_Home, C5_Home, C6_Home, N5_Home, C7_Home, N6_Home, C8_Home, C9_Home, C10_Home, N7_Home, C11_Home)))
+```

@@ -1,0 +1,151 @@
+---
+title: "MetricExtract"
+output: html_document
+---
+
+Code used to create the presentation. Metrics are explained in detail there as well.
+
+```{r}
+# Load packages
+library(tidyverse)
+library(patchwork)
+# Load schedules and make sure that everything is numeric
+data <- read.csv("CSVNAME")
+```
+
+```{r}
+# Sum the distances
+data <- data %>% 
+  mutate(across(-Gender, as.numeric))
+data$Bye_Gap[data$Bye_Gap == 0] <- NA
+
+index <- rep(c(0:10, 0:11), length.out = nrow(data))
+data$index <- index
+```
+
+```{r}
+# Add Team Pain metric
+data <- data %>%
+  mutate(TeamPain = (Distance*1.2 + (Max_Away_Streak * 100))/100)
+```
+
+```{r}
+# Group by gender and schedule to get mean team pain and distance traveled
+MeanMets <- data %>%
+  group_by(Gender, index) %>%
+  summarise(Pain_Mean = mean(TeamPain),
+            Dist_Mean = mean(Distance))
+```
+
+```{r}
+# Summarise the average distance and pain accross teams, as well as the RMSE metrics
+# (which act the same as in V1) accross teams for each schedule for each gender
+summary_full <- data %>%
+  group_by(Seed, Gender) %>%
+  mutate(Average_Dist_Total = mean(Distance),
+         Average_Pain = mean(TeamPain)) %>%
+  ungroup() %>%  
+  group_by(Seed, Gender, index) %>%
+  mutate(
+         Sq_Dist_Total_From_Mean = (Average_Dist_Total - Distance)^2,
+         Sq_Pain_From_Mean = (Average_Pain- TeamPain)^2 ) %>%
+  ungroup() %>%
+  group_by(Seed, Gender) %>%
+  summarise(
+    # We want these to be low
+    RMSE_Total_Dist = sqrt(mean(Sq_Dist_Total_From_Mean)),
+    RMSE_Team_Pain = sqrt(mean(Sq_Pain_From_Mean))) %>% 
+  ungroup()
+
+```
+
+```{r}
+# Add the metrics to the dataframe
+data <- data %>%
+  left_join(MeanMets, by = c("index","Gender"))
+
+data <- data %>%
+  mutate(TeamPain_FromMean = TeamPain - Pain_Mean,
+         Distance_FromMean = Distance - Dist_Mean)
+```
+
+```{r}
+# Calculate average metrics overall
+dataq <- data %>%
+  group_by(Seed, Gender) %>%
+  summarise(
+         AvgPainFromMean = mean(TeamPain_FromMean),
+         AvgDistFromMean = mean(Distance_FromMean))
+
+summary_full <- summary_full %>%
+  left_join(dataq, by = c("Seed", "Gender"))
+```
+
+```{r}
+# Calculate metrics and extract for distribution histograms
+possible <- data %>%
+  mutate(last3 = sum(W16_Locale + W17_Locale + W18_Locale)) %>%
+  group_by(Seed) %>%
+  summarise(please = max(Max_Away_Streak),
+            thanks = max(Max_Home_Streak),
+            final_home = min(last3)) %>%
+  arrange(please, thanks) %>%
+  filter(please <= 5,
+         thanks <= 5) 
+```
+
+```{r}
+# Plotting function
+plot_seed_performance <- function(input_seed) {
+  
+  # Get data for the schedule seed
+  summary_choice <- summary_full %>%
+    filter(Seed == input_seed)
+  
+
+  # Specific plot maker functions
+  make_plot <- function(gen, col_name, row_idx, col_idx, title_str) {
+    
+    # Filter to each gender for the seed
+    ggplot(summary_full %>% filter(Gender == gen)) +
+      geom_density(aes(x = .data[[col_name]])) +
+      
+      # Add line with the metrics from the schedule
+      geom_vline(xintercept = summary_choice[[row_idx, col_idx]], 
+                 color = "red", linewidth = 1) +
+      theme_bw() +
+      labs(title = title_str)
+  }
+
+  # Make all 8 plots for the schedule
+  # The numbers correspond to the metrics as well as the gender as in summary_choice
+  a1 <- make_plot("M", "RMSE_Total_Dist", 1, 3, "Men's RMSE_Total_Dist")
+  a2 <- make_plot("W", "RMSE_Total_Dist", 2, 3, "Women's RMSE_Total_Dist")
+  
+  a3 <- make_plot("M", "RMSE_Team_Pain",  1, 4, "Men's RMSE_Team_Pain")
+  a4 <- make_plot("W", "RMSE_Team_Pain",  2, 4, "Women's RMSE_Team_Pain")
+  
+  b1 <- make_plot("M", "AvgPainFromMean", 1, 5, "Men's AvgPainFromMean")
+  b2 <- make_plot("W", "AvgPainFromMean", 2, 5, "Women's AvgPainFromMean")
+  
+  b3 <- make_plot("M", "AvgDistFromMean", 1, 6, "Men's AvgDistFromMean")
+  b4 <- make_plot("W", "AvgDistFromMean", 2, 6, "Women's AvgDistFromMean")
+
+  # Plot layout
+  combined_plot <- (a3 + a4 + b1 + b2) / (a1 + a2 + b3 + b4) +
+    plot_annotation(title = paste("Performance Metrics for Seed:", input_seed))
+
+  return(combined_plot)
+}
+```
+
+```{r}
+# Create plots for the good schedules
+plot_seed_performance(3617) 
+plot_seed_performance(3949)
+plot_seed_performance(4995)
+plot_seed_performance(5134)
+plot_seed_performance(8401) 
+plot_seed_performance(9333) 
+plot_seed_performance(11125)
+```

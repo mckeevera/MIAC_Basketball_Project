@@ -1,0 +1,260 @@
+---
+title: "Filter"
+output: html_document
+---
+
+### Set Up
+
+Run for about 100000 schedules at a time unless you have [a lot]{.underline} of RAM.
+
+```{r}
+# Load library and some data
+library(tidyverse)
+
+# We 
+data <- read.csv("CSVNAME.CSV")  
+
+# Make data numeric and add a index for the team number
+data <- cbind(index =(seq_len(nrow(data))-1) %% 11, data)
+data <- data %>%
+  mutate(across(everything(), as.numeric))
+
+```
+
+### Dataframes
+
+Split into different dataframes for easier computation
+
+```{r}
+# Opponents
+Sched_Track <- data %>%
+  select(c(Schedule, index, N1_Opp, C1_Opp, N2_Opp, C2_Opp, N3_Opp, C3_Opp, N4_Opp, C4_Opp, C5_Opp, C6_Opp, N5_Opp, C7_Opp, N6_Opp, C8_Opp, C9_Opp, C10_Opp, N7_Opp, C11_Opp))
+  
+# Home or away
+Home_Track <- data %>%
+  select(c(Schedule, index, N1_Home, C1_Home, N2_Home, C2_Home, N3_Home, C3_Home, N4_Home, C4_Home, C5_Home, C6_Home, N5_Home, C7_Home, N6_Home, C8_Home, C9_Home, C10_Home, N7_Home, C11_Home))
+
+# Conference Home or away
+Home_Track_Con <- data %>%
+  select(c(Schedule, index, C1_Home, C2_Home, C3_Home, C4_Home, C5_Home, C6_Home, C7_Home, C8_Home, C9_Home, C10_Home, C11_Home))
+
+# Non conference home or away
+Home_Track_Non <- data %>%
+  select(c(Schedule, index , N1_Home, N2_Home, N3_Home,N4_Home,N5_Home,N6_Home, N7_Home))
+```
+
+### Physical Distance
+
+Get distance each team travels across the schedule
+
+```{r}
+data <- data %>%
+group_by(Schedule, index) %>%
+  # Noncon distance (*0 if actually at home)
+  mutate(NonCon_Dist = sum(N1_Dist * (N1_Home == 0)   + 
+                            N2_Dist * (N2_Home == 0)  + 
+                            N3_Dist * (N3_Home == 0)  + 
+                            N4_Dist * (N4_Home == 0)  + 
+                            N5_Dist * (N5_Home == 0)  + 
+                            N6_Dist * (N6_Home == 0)  + 
+                            N7_Dist * (N7_Home == 0) 
+                            , na.rm = TRUE) ,
+         # Condistance
+         Con_Dist = sum(C1_Dist * (C1_Home == 0)   + 
+                           C2_Dist * (C2_Home == 0)+ 
+                           C3_Dist * (C3_Home == 0)+ 
+                           C4_Dist * (C4_Home == 0)+ 
+                           C5_Dist * (C5_Home == 0)+ 
+                           C6_Dist * (C6_Home == 0)+ 
+                           C7_Dist * (C7_Home == 0)+ 
+                           C8_Dist * (C8_Home == 0)+ 
+                           C9_Dist * (C9_Home == 0)+ 
+                           C10_Dist * (C10_Home == 0)+ 
+                           C11_Dist * (C11_Home == 0)
+                           , na.rm = TRUE),
+         # Total distance
+         Total_Dist = NonCon_Dist + Con_Dist)
+```
+
+### Bye Week Distance / Opp Distance
+
+FInd distance between bye weeks and each opponent (if there is a non-conference and conference)
+
+```{r}
+# Function that returns the number of weeks between repeats (for either bye = -1 or a team number)
+bye_gap <- function(row, value) {
+  
+  indices <- which(trimws(row) == value)
+  
+  if (length(indices) < 2) {
+    return(NA) 
+  }
+  
+  gaps <- diff(indices) - 1
+  
+  return(paste(gaps, collapse = ", "))
+}
+
+# Use function for bye and every team number
+Sched_Track$Games_Between_Bye <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = -1)
+Sched_Track$Games_Between_0 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 0)
+Sched_Track$Games_Between_1 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 1)
+Sched_Track$Games_Between_2 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 2)
+Sched_Track$Games_Between_3 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 3)
+Sched_Track$Games_Between_4 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 4)
+Sched_Track$Games_Between_5 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 5)
+Sched_Track$Games_Between_6 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 6)
+Sched_Track$Games_Between_7 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 7)
+Sched_Track$Games_Between_8 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 8)
+Sched_Track$Games_Between_9 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 9)
+Sched_Track$Games_Between_10 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 10)
+```
+
+### Consecutive
+
+Explore home and away streaks for teams
+
+```{r}
+# Function the calculates the maximum number of home or away games a team plays in a row
+consec_games <- function(x, value) {
+  
+  r <- rle(x)
+  
+  lengths <- r$lengths[r$values == value]
+
+  if (length(lengths) > 0) {
+    
+    return(max(lengths))
+    
+  } else {
+    return(0)
+  }
+}
+
+# Apply to conference games, noncon games, and the schedule as a whole
+Home_Track$Max_Away_Streak_Total <- apply(Home_Track[, c(3:20)], 1,  
+                                          consec_games, value = 0)
+
+Home_Track$Max_Home_Streak_Total <- apply(Home_Track[, c(3:20)], 1, 
+                                          consec_games, value = 1)
+
+Home_Track_Con$Max_Away_Streak_Con <- apply(Home_Track_Con[, c(3:13)], 1, 
+                                          consec_games, value = 0)
+
+Home_Track_Con$Max_Home_Streak_Con <- apply(Home_Track_Con[, c(3:13)], 1, 
+                                          consec_games, value = 1)
+
+Home_Track_Non$Max_Away_Streak_Non <- apply(Home_Track_Non[, c(3:9)], 1, 
+                                          consec_games, value = 0)
+
+Home_Track_Non$Max_Home_Streak_Non <- apply(Home_Track_Non[, c(3:9)], 1, 
+                                          consec_games, value = 1)
+```
+
+### Combine Data
+
+Combine all information we have computed into one data frame
+
+```{r, message = FALSE}
+complete <- data %>%
+  left_join(Sched_Track) %>%
+  left_join(Home_Track) %>%
+  left_join(Home_Track_Con) %>%
+  left_join(Home_Track_Non)
+
+# Ensure everything is numeric!
+complete$Games_Between_Bye <- as.numeric(complete$Games_Between_Bye)
+complete$Games_Between_0 <- as.numeric(complete$Games_Between_0)
+complete$Games_Between_1 <- as.numeric(complete$Games_Between_1)
+complete$Games_Between_2 <- as.numeric(complete$Games_Between_2)
+complete$Games_Between_3 <- as.numeric(complete$Games_Between_3)
+complete$Games_Between_4 <- as.numeric(complete$Games_Between_4)
+complete$Games_Between_5 <- as.numeric(complete$Games_Between_5)
+complete$Games_Between_6 <- as.numeric(complete$Games_Between_6)
+complete$Games_Between_7 <- as.numeric(complete$Games_Between_7)
+complete$Games_Between_8 <- as.numeric(complete$Games_Between_8)
+complete$Games_Between_9 <- as.numeric(complete$Games_Between_9)
+complete$Games_Between_10 <- as.numeric(complete$Games_Between_10)
+complete$Max_Away_Streak_Con <- as.numeric(complete$Max_Away_Streak_Con)
+complete$Max_Home_Streak_Con <- as.numeric(complete$Max_Home_Streak_Con)
+complete$Max_Away_Streak_Non <- as.numeric(complete$Max_Away_Streak_Non)
+complete$Max_Home_Streak_Non <- as.numeric(complete$Max_Home_Streak_Non)
+complete$Max_Away_Streak_Total <- as.numeric(complete$Max_Away_Streak_Total)
+complete$Max_Home_Streak_Total <- as.numeric(complete$Max_Home_Streak_Total)
+
+```
+
+### Metrics
+
+Calculate RMSE metrics.
+
+```{r}
+# Calculate RMSE metrics as described in the presenation.
+summ <- complete %>%
+  group_by(Schedule) %>%
+  # Average distance accross teams for each schedule
+  mutate(Average_Dist_Total = mean(Total_Dist),
+         Average_Dist_NonCon = mean(NonCon_Dist),
+         Average_Dist_Con = mean(Con_Dist)) %>%
+  ungroup() %>%  
+  group_by(Schedule, index) %>%
+  mutate(
+    # Distance each team is from the mean distance for the schedule squared
+         Sq_Dist_Total_From_Mean = (Average_Dist_Total - Total_Dist)^2,
+         Sq_Dist_NonCon_From_Mean = (Average_Dist_NonCon - NonCon_Dist)^2,
+         Sq_Dist_Con_From_Mean = (Average_Dist_Con - Con_Dist)^2) %>%
+  ungroup() %>%
+  group_by(Schedule) %>%
+  summarise(
+    # We want these to be low - the square root of the mean distance from the mean accorss teams
+    RMSE_Total_Dist = sqrt(mean(Sq_Dist_Total_From_Mean)),
+            RMSE_NonCon_Dist =  sqrt(mean(Sq_Dist_NonCon_From_Mean)),
+            RMSE_Con_Dist = sqrt(mean(Sq_Dist_Con_From_Mean)),
+            
+            # We want these to be high
+            # The minimum distance between byes or repeat opponents across all teams for each schedule
+            min_bye_dist = min(Games_Between_Bye),
+                      min_0_dist = min(Games_Between_0, na.rm = TRUE),
+                        min_1_dist = min(Games_Between_1, na.rm = TRUE),
+                        min_2_dist = min(Games_Between_2, na.rm = TRUE),
+                        min_3_dist = min(Games_Between_3, na.rm = TRUE),
+                        min_4_dist = min(Games_Between_4, na.rm = TRUE),
+                        min_5_dist = min(Games_Between_5, na.rm = TRUE),
+                        min_6_dist = min(Games_Between_6, na.rm = TRUE),
+                        min_7_dist = min(Games_Between_7, na.rm = TRUE),
+                        min_8_dist = min(Games_Between_8, na.rm = TRUE),
+                        min_9_dist = min(Games_Between_9, na.rm = TRUE),
+                        min_10_dist = min(Games_Between_10, na.rm = TRUE),
+            
+            # Get the highest home and away streaks across all teams for each schedule
+            max_away_streak = max(Max_Away_Streak_Total),
+            max_home_streak = max(Max_Home_Streak_Total),
+            max_away_streak_nc = max(Max_Away_Streak_Non),
+            max_home_streak_nc = max(Max_Home_Streak_Non),
+            max_away_streak_c = max(Max_Away_Streak_Con),
+            max_home_streak_c = max(Max_Home_Streak_Con)) %>% ungroup()
+```
+
+```{r}
+# Filter to good schedules in terms of not having byes the same opponent back to back 
+final <- summ %>%
+  filter(
+    min_bye_dist > 0,
+    min_0_dist > 0,
+    min_1_dist > 0,
+    min_2_dist > 0,
+    min_3_dist > 0,
+    min_4_dist > 0,
+    min_5_dist > 0,
+    min_6_dist > 0,
+    min_7_dist > 0,
+    min_8_dist > 0,
+    min_9_dist > 0,
+    min_10_dist > 0
+  )
+```
+
+```{r}
+# Write out the good schedules (with their schedule index number)
+write.csv(final, file = "out.csv")
+```

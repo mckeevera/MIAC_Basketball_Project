@@ -1,0 +1,428 @@
+---
+title: "Metrics"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+Load (a subset, for RAM purposes, of) all schedules
+
+Calculate metrics as in Filter.Rmd
+
+```{r}
+full_data <- read.csv("CSVNAME")
+```
+
+```{r}
+full_data <- full_data %>%
+  mutate(across(everything(), as.numeric))
+
+full_data <- cbind(index =(seq_len(nrow(full_data))-1) %% 11, full_data)
+```
+
+```{r}
+Sched_Track <- full_data %>%
+  select(c(Schedule, index, N1_Opp, C1_Opp, N2_Opp, C2_Opp, N3_Opp, C3_Opp, N4_Opp, C4_Opp, C5_Opp, C6_Opp, N5_Opp, C7_Opp, N6_Opp, C8_Opp, C9_Opp, C10_Opp, N7_Opp, C11_Opp))
+  
+
+Home_Track <- full_data %>%
+  select(c(Schedule, index, N1_Home, C1_Home, N2_Home, C2_Home, N3_Home, C3_Home, N4_Home, C4_Home, C5_Home, C6_Home, N5_Home, C7_Home, N6_Home, C8_Home, C9_Home, C10_Home, N7_Home, C11_Home))
+
+Home_Track_Con <- full_data %>%
+  select(c(Schedule, index, C1_Home, C2_Home, C3_Home, C4_Home, C5_Home, C6_Home, C7_Home, C8_Home, C9_Home, C10_Home, C11_Home))
+
+Home_Track_Non <- full_data %>%
+  select(c(Schedule, index , N1_Home, N2_Home, N3_Home,N4_Home,N5_Home,N6_Home, N7_Home))
+```
+
+```{r}
+full_data <- full_data %>%
+group_by(Schedule, index) %>%
+  mutate(NonCon_Dist = sum(N1_Dist * (N1_Home == 0)   + 
+                            N2_Dist * (N2_Home == 0)  + 
+                            N3_Dist * (N3_Home == 0)  + 
+                            N4_Dist * (N4_Home == 0)  + 
+                            N5_Dist * (N5_Home == 0)  + 
+                            N6_Dist * (N6_Home == 0)  + 
+                            N7_Dist * (N7_Home == 0) 
+                            , na.rm = TRUE) ,
+         Con_Dist = sum(C1_Dist * (C1_Home == 0)   + 
+                           C2_Dist * (C2_Home == 0)+ 
+                           C3_Dist * (C3_Home == 0)+ 
+                           C4_Dist * (C4_Home == 0)+ 
+                           C5_Dist * (C5_Home == 0)+ 
+                           C6_Dist * (C6_Home == 0)+ 
+                           C7_Dist * (C7_Home == 0)+ 
+                           C8_Dist * (C8_Home == 0)+ 
+                           C9_Dist * (C9_Home == 0)+ 
+                           C10_Dist * (C10_Home == 0)+ 
+                           C11_Dist * (C11_Home == 0)
+                           , na.rm = TRUE),
+         Total_Dist = NonCon_Dist + Con_Dist)
+```
+
+```{r}
+bye_gap <- function(row, value) {
+  
+  indices <- which(trimws(row) == value)
+  
+  if (length(indices) < 2) {
+    return(NA) 
+  }
+  
+  gaps <- diff(indices) - 1
+  
+  return(paste(gaps, collapse = ", "))
+}
+
+Sched_Track$Games_Between_Bye <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = -1)
+Sched_Track$Games_Between_0 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 0)
+Sched_Track$Games_Between_1 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 1)
+Sched_Track$Games_Between_2 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 2)
+Sched_Track$Games_Between_3 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 3)
+Sched_Track$Games_Between_4 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 4)
+Sched_Track$Games_Between_5 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 5)
+Sched_Track$Games_Between_6 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 6)
+Sched_Track$Games_Between_7 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 7)
+Sched_Track$Games_Between_8 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 8)
+Sched_Track$Games_Between_9 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 9)
+Sched_Track$Games_Between_10 <- apply(Sched_Track[, c(3:20)], 1, bye_gap, value = 10)
+```
+
+```{r}
+consec_games <- function(x, value) {
+  
+  r <- rle(x)
+  
+  lengths <- r$lengths[r$values == value]
+
+  if (length(lengths) > 0) {
+    
+    return(max(lengths))
+    
+  } else {
+    return(0)
+  }
+}
+
+Home_Track$Max_Away_Streak_Total <- apply(Home_Track[, c(3:20)], 1,  
+                                          consec_games, value = 0)
+
+Home_Track$Max_Home_Streak_Total <- apply(Home_Track[, c(3:20)], 1, 
+                                          consec_games, value = 1)
+
+Home_Track_Con$Max_Away_Streak_Con <- apply(Home_Track_Con[, c(3:13)], 1, 
+                                          consec_games, value = 0)
+
+Home_Track_Con$Max_Home_Streak_Con <- apply(Home_Track_Con[, c(3:13)], 1, 
+                                          consec_games, value = 1)
+
+Home_Track_Non$Max_Away_Streak_Non <- apply(Home_Track_Non[, c(3:9)], 1, 
+                                          consec_games, value = 0)
+
+Home_Track_Non$Max_Home_Streak_Non <- apply(Home_Track_Non[, c(3:9)], 1, 
+                                          consec_games, value = 1)
+```
+
+```{r}
+full_data_complete <- full_data %>%
+  left_join(Sched_Track) %>%
+  left_join(Home_Track) %>%
+  left_join(Home_Track_Con) %>%
+  left_join(Home_Track_Non)
+
+# Make numeric
+full_data_complete$Games_Between_Bye <- as.numeric(full_data_complete$Games_Between_Bye)
+full_data_complete$Games_Between_0 <- as.numeric(full_data_complete$Games_Between_0)
+full_data_complete$Games_Between_1 <- as.numeric(full_data_complete$Games_Between_1)
+full_data_complete$Games_Between_2 <- as.numeric(full_data_complete$Games_Between_2)
+full_data_complete$Games_Between_3 <- as.numeric(full_data_complete$Games_Between_3)
+full_data_complete$Games_Between_4 <- as.numeric(full_data_complete$Games_Between_4)
+full_data_complete$Games_Between_5 <- as.numeric(full_data_complete$Games_Between_5)
+full_data_complete$Games_Between_6 <- as.numeric(full_data_complete$Games_Between_6)
+full_data_complete$Games_Between_7 <- as.numeric(full_data_complete$Games_Between_7)
+full_data_complete$Games_Between_8 <- as.numeric(full_data_complete$Games_Between_8)
+full_data_complete$Games_Between_9 <- as.numeric(full_data_complete$Games_Between_9)
+full_data_complete$Games_Between_10 <- as.numeric(full_data_complete$Games_Between_10)
+full_data_complete$Max_Away_Streak_Con <- as.numeric(full_data_complete$Max_Away_Streak_Con)
+full_data_complete$Max_Home_Streak_Con <- as.numeric(full_data_complete$Max_Home_Streak_Con)
+full_data_complete$Max_Away_Streak_Non <- as.numeric(full_data_complete$Max_Away_Streak_Non)
+full_data_complete$Max_Home_Streak_Non <- as.numeric(full_data_complete$Max_Home_Streak_Non)
+full_data_complete$Max_Away_Streak_Total <- as.numeric(full_data_complete$Max_Away_Streak_Total)
+full_data_complete$Max_Home_Streak_Total <- as.numeric(full_data_complete$Max_Home_Streak_Total)
+```
+
+```{r}
+# Team pain metric calculation as described in the presentation
+full_data_complete <- full_data_complete %>%
+  mutate(TeamPain = (abs(Games_Between_Bye - 8) * 100 +  Con_Dist*1.2 +  NonCon_Dist + Max_Away_Streak_Total * 100)/100)
+```
+
+```{r}
+# Partition the schedules by team
+Team0 <- full_data_complete %>% filter(index == 0)
+Team1 <- full_data_complete %>% filter(index == 1)
+Team2 <- full_data_complete %>% filter(index == 2)
+Team3 <- full_data_complete %>% filter(index == 3)
+Team4 <- full_data_complete %>% filter(index == 4)
+Team5 <- full_data_complete %>% filter(index == 5)
+Team6 <- full_data_complete %>% filter(index == 6)
+Team7 <- full_data_complete %>% filter(index == 7)
+Team8 <- full_data_complete %>% filter(index == 8)
+Team9 <- full_data_complete %>% filter(index == 9)
+Team10 <- full_data_complete %>% filter(index == 10)
+```
+
+Get mean stats for each team and view distributions of team pain, conference distance, and non conference distance.
+
+```{r}
+ggplot(Team0) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team0) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team0) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team0$TeamPain)
+mosaic::favstats(Team0$Con_Dist)
+mosaic::favstats(Team0$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team1) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team1) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team1) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team1$TeamPain)
+mosaic::favstats(Team1$Con_Dist)
+mosaic::favstats(Team1$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team2) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team2) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team2) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team2$TeamPain)
+mosaic::favstats(Team2$Con_Dist)
+mosaic::favstats(Team2$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team3) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team3) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team3) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team3$TeamPain)
+mosaic::favstats(Team3$Con_Dist)
+mosaic::favstats(Team3$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team4) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team4) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team4) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team4$TeamPain)
+mosaic::favstats(Team4$Con_Dist)
+mosaic::favstats(Team4$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team5) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team5) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team5) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team5$TeamPain)
+mosaic::favstats(Team5$Con_Dist)
+mosaic::favstats(Team5$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team6) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team6) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team6) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team6$TeamPain)
+mosaic::favstats(Team6$Con_Dist)
+mosaic::favstats(Team6$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team7) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team7) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team7) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team7$TeamPain)
+mosaic::favstats(Team7$Con_Dist)
+mosaic::favstats(Team7$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team8) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team8) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team8) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team8$TeamPain)
+mosaic::favstats(Team8$Con_Dist)
+mosaic::favstats(Team8$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team9) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team9) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team9) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team9$TeamPain)
+mosaic::favstats(Team9$Con_Dist)
+mosaic::favstats(Team9$NonCon_Dist)
+```
+
+```{r}
+ggplot(Team10) +
+  geom_histogram(aes(x = TeamPain)) +
+  theme_bw()
+ggplot(Team10) +
+  geom_histogram(aes(x = Con_Dist), bins = 15) +
+  theme_bw()
+ggplot(Team10) +
+  geom_histogram(aes(x = NonCon_Dist), bins = 15) +
+  theme_bw()
+mosaic::favstats(Team10$TeamPain)
+mosaic::favstats(Team10$Con_Dist)
+mosaic::favstats(Team10$NonCon_Dist)
+```
+
+Get overall averages (RMSE as in FIlter.Rmd)
+
+```{r}
+summary_full <- full_data_complete %>%
+  group_by(Schedule) %>%
+  mutate(Average_Dist_Total = mean(Total_Dist),
+         Average_Dist_NonCon = mean(NonCon_Dist),
+         Average_Dist_Con = mean(Con_Dist)) %>%
+  ungroup() %>%  
+  group_by(Schedule, index) %>%
+  mutate(
+         Sq_Dist_Total_From_Mean = (Average_Dist_Total - Total_Dist)^2,
+         Sq_Dist_NonCon_From_Mean = (Average_Dist_NonCon - NonCon_Dist)^2,
+         Sq_Dist_Con_From_Mean = (Average_Dist_Con - Con_Dist)^2) %>%
+  ungroup() %>%
+  group_by(Schedule) %>%
+  summarise(
+    # We want these to be low
+    RMSE_Total_Dist = sqrt(mean(Sq_Dist_Total_From_Mean)),
+            RMSE_NonCon_Dist =  sqrt(mean(Sq_Dist_NonCon_From_Mean)),
+            RMSE_Con_Dist = sqrt(mean(Sq_Dist_Con_From_Mean))) %>% ungroup()
+
+```
+
+```{r}
+# Compute, for each schedule, each teams metric values from their average metric values
+full_data_complete <- full_data_complete %>%
+  mutate(TeamPain_FromMean = case_when(
+    index == 0 ~ TeamPain - 14.67482,
+    index == 1 ~ TeamPain - 14.89973,
+    index == 2 ~ TeamPain - 15.95973,
+    index == 3 ~ TeamPain - 27.96366,
+    index == 4 ~ TeamPain - 17.64038,
+    index == 5 ~ TeamPain - 14.78092,
+    index == 6 ~ TeamPain - 14.84008,
+    index == 7 ~ TeamPain - 17.92112,
+    index == 8 ~ TeamPain - 20.72097,
+    index == 9 ~ TeamPain - 15.82261,
+    index == 10 ~ TeamPain - 22.64937
+  ),
+  ConDist_FromMean = case_when(
+    index == 0 ~ Con_Dist - 384.7642,
+    index == 1 ~ Con_Dist - 399.4845,
+    index == 2 ~ Con_Dist - 464.4267,
+    index == 3 ~ Con_Dist - 1169.553,
+    index == 4 ~ Con_Dist - 577.1146,
+    index == 5 ~ Con_Dist - 391.9879,
+    index == 6 ~ Con_Dist - 393.9145,
+    index == 7 ~ Con_Dist - 586.4129,
+    index == 8 ~ Con_Dist - 802.5734,
+    index == 9 ~ Con_Dist - 453.4441,
+    index == 10 ~ Con_Dist - 886.3242
+  ),
+  NonConDist_FromMean = case_when(
+    index == 0 ~ NonCon_Dist - 259.1872,
+    index == 1 ~ NonCon_Dist - 262.9351,
+    index == 2 ~ NonCon_Dist - 292.3527,
+    index == 3 ~ NonCon_Dist - 644.6373,
+    index == 4 ~ NonCon_Dist - 326.4413,
+    index == 5 ~ NonCon_Dist - 260.4269,
+    index == 6 ~ NonCon_Dist - 263.9249,
+    index == 7 ~ NonCon_Dist - 340.4638,
+    index == 8 ~ NonCon_Dist - 361.728,
+    index == 9 ~ NonCon_Dist - 289.6255,
+    index == 10 ~ NonCon_Dist - 454.4512
+  )
+  )
+
+# Then, we compute the average values of these differences to examine fair schedules
+full_data_complete <- full_data_complete %>%
+  group_by(Schedule) %>%
+  mutate(AveragePain = mean(TeamPain),
+         AvgPainFromMean = mean(TeamPain_FromMean),
+         AvgConDistFromMean = mean(ConDist_FromMean),
+         AvgNonConDistFromMean = mean(NonConDist_FromMean)) %>%
+  ungroup() %>%  
+  group_by(Schedule, index) %>%
+  mutate(
+         Sq_Dist_Total_From_TeamPain = (AveragePain - TeamPain)^2) %>%
+  ungroup() %>%
+  group_by(Schedule) %>%
+  mutate(
+    RMSE_TeamPain = sqrt(mean(Sq_Dist_Total_From_TeamPain)))
+```
